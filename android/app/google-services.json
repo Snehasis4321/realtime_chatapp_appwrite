@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "219628265332",
+    "project_id": "push-notification-df5a5",
+    "storage_bucket": "push-notification-df5a5.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:219628265332:android:828d681b4d44d816711621",
+        "android_client_info": {
+          "package_name": "com.example.push_notifications_firebase_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARjhCgoxcxZMCFYBTAx8qwRTCTGcxlcKo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:219628265332:android:01a0598fd42f51dd711621",
+        "android_client_info": {
+          "package_name": "com.example.realtime_chatapp_appwrite"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARjhCgoxcxZMCFYBTAx8qwRTCTGcxlcKo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
