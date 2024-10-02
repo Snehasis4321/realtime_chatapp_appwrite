@@ -6,6 +6,7 @@ class MessageModel {
   final DateTime timestamp;
   final bool isSeenByReceiver;
   final bool? isImage;
+  final bool isGroupInvite;
 
   MessageModel(
       {required this.message,
@@ -14,7 +15,7 @@ class MessageModel {
       this.messageId,
       required this.timestamp,
       required this.isSeenByReceiver,
-      this.isImage});
+      this.isImage,required this.isGroupInvite});
 
   // that will convert Document model to message model
   factory MessageModel.fromMap(Map<String, dynamic> map) {
@@ -25,6 +26,7 @@ class MessageModel {
         timestamp: DateTime.parse(map["timestamp"]),
         isSeenByReceiver: map["isSeenbyReceiver"],
         messageId: map["\$id"],
-        isImage: map["isImage"]);
+        isImage: map["isImage"],
+        isGroupInvite: map["isGroupInvite"]??false);
   }
 }

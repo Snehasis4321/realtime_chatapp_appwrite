@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalSavedData {
@@ -59,4 +61,26 @@ class LocalSavedData {
     final bool data = await preferences!.clear();
     print("cleared all data from local :$data");
   }
+
+  // Function to save the lastseen msg on group map to shared preferences
+Future<void> saveLastSeenMessages(Map<String, String> lastSeenMessages) async {
+  print("saving last seen");
+  String jsonString = jsonEncode(lastSeenMessages); 
+  await preferences!.setString('lastSeenMessages', jsonString);
+}
+
+// Function to get the map from shared preferences
+Future<Map<String, String>> getLastSeenMessages() async {
+  print("getting last seen");
+  String? jsonString = preferences!.getString('lastSeenMessages');
+  
+  if (jsonString != null) {
+    Map<String, dynamic> jsonMap = jsonDecode(jsonString); 
+    print("json map: $jsonMap");
+    return jsonMap.map((key, value) => MapEntry(key, value as String)); 
+  }
+
+  return {}; 
+}
+
 }

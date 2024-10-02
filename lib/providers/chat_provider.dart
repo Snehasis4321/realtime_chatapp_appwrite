@@ -81,6 +81,7 @@ class ChatProvider extends ChangeNotifier {
         // current user is receiver
         _chats[message.sender]!
             .removeWhere((element) => element.message == message);
+            deleteCurrentUserChat(chatId: message.messageId!);
         print("message deleted");
       }
       notifyListeners();

@@ -3,11 +3,14 @@ import 'dart:convert';
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:provider/provider.dart';
+import 'package:realtime_chatapp_appwrite/controllers/local_saved_data.dart';
 import 'package:realtime_chatapp_appwrite/main.dart';
 import 'package:realtime_chatapp_appwrite/models/chat_data_model.dart';
+import 'package:realtime_chatapp_appwrite/models/group_message_model.dart';
 import 'package:realtime_chatapp_appwrite/models/message_model.dart';
 import 'package:realtime_chatapp_appwrite/models/user_data.dart';
 import 'package:realtime_chatapp_appwrite/providers/chat_provider.dart';
+import 'package:realtime_chatapp_appwrite/providers/group_message_provider.dart';
 import 'package:realtime_chatapp_appwrite/providers/user_data_provider.dart';
 import 'package:http/http.dart' as http;
 
@@ -20,6 +23,8 @@ Client client = Client()
 const String db = "662e8faa0023aee32aa2";
 const String userCollection = "662e8fb6000c22d22075";
 const String chatCollection = "663005fa00219227b219";
+const String groupCollection = "66faffc6003b2312a584";
+const String groupMsgCollection = "66fb00c800016ed39134";
 const String storageBucket = "662faabe001a20bb87c6";
 
 Account account = Account(client);
@@ -28,6 +33,7 @@ final Storage storage = Storage(client);
 final Realtime realtime = Realtime(client);
 
 RealtimeSubscription? subscription;
+RealtimeSubscription? groupMsgSubscription;
 // to subscribe to realtime changes
 subscribeToRealtime({required String userId}) {
   subscription = realtime.subscribe([
@@ -56,6 +62,38 @@ subscribeToRealtime({required String userId}) {
       Provider.of<ChatProvider>(navigatorKey.currentState!.context,
               listen: false)
           .loadChats(userId);
+    }
+  });
+}
+
+// to subscribe to realtime changes
+subscribeToRealtimeGroupMsg({required String userId}) {
+  subscription = realtime.subscribe([
+    "databases.$db.collections.$groupCollection.documents",
+    "databases.$db.collections.$groupMsgCollection.documents"
+  ]);
+
+  print("subscribing to realtime");
+
+  subscription!.stream.listen((data) {
+    print("some event happend");
+    // print(data.events);
+    // print(data.payload);
+    final firstItem = data.events[0].split(".");
+    final eventType = firstItem[firstItem.length - 1];
+    print("event type is $eventType");
+    if (eventType == "create") {
+      Provider.of<GroupMessageProvider>(navigatorKey.currentState!.context,
+              listen: false)
+          .loadAllGroupRequiredData(userId);
+    } else if (eventType == "update") {
+   Provider.of<GroupMessageProvider>(navigatorKey.currentState!.context,
+              listen: false)
+          .loadAllGroupRequiredData(userId);
+    } else if (eventType == "delete") {
+     Provider.of<GroupMessageProvider>(navigatorKey.currentState!.context,
+              listen: false)
+          .loadAllGroupRequiredData(userId);
     }
   });
 }
@@ -274,7 +312,7 @@ Future createNewChat(
     {required String message,
     required String senderId,
     required String receiverId,
-    required bool isImage}) async {
+    required bool isImage,required bool isGroupInvite}) async {
   try {
     final msg = await databases.createDocument(
         databaseId: db,
@@ -287,7 +325,8 @@ Future createNewChat(
           "timestamp": DateTime.now().toIso8601String(),
           "isSeenbyReceiver": false,
           "isImage": isImage,
-          "userData": [senderId, receiverId]
+          "userData": [senderId, receiverId],
+          "isGroupInvite":isGroupInvite
         });
 
     print("message send");
@@ -435,6 +474,295 @@ Future sendNotificationtoOtherUser({
 
     final response = await http.post(
         Uri.parse("https://6639e5cdc5c67686b510.appwrite.global/"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(body));
+
+    if (response.statusCode == 200) {
+      print("notification send to other user");
+    }
+  } catch (e) {
+    print("notification cannot be sent");
+  }
+}
+
+// Group Functions
+// create a new group
+Future<bool> createNewGroup(
+    {required String currentUser,
+    required String groupName,
+    required String groupDesc,
+    bool? isOpen,
+    required String image}) async {
+  try {
+    await databases.createDocument(
+        databaseId: db,
+        collectionId: groupCollection,
+        documentId: ID.unique(),
+        data: {
+          "admin": currentUser,
+          "group_name": groupName,
+          "group_desc": groupDesc,
+          "image": image,
+          "isPublic": isOpen,
+          "members": [currentUser],
+          "userData": [currentUser]
+        });
+    return true;
+  } catch (e) {
+    print("Failed to create new group $e");
+    return false;
+  }
+}
+
+Future<bool> updateExistingGroup(
+    {required String groupId,
+    required String groupName,
+    required String groupDesc,
+    bool? isOpen,
+    required String image}) async {
+  try {
+    await databases.updateDocument(
+        databaseId: db,
+        collectionId: groupCollection,
+        documentId: groupId,
+        data: {
+          "group_name": groupName,
+          "group_desc": groupDesc,
+          "image": image,
+          "isPublic": isOpen,
+        });
+    return true;
+  } catch (e) {
+    print("Failed to update the group $e");
+    return false;
+  }
+}
+
+// read all the groups current user is joined now.
+Future<DocumentList?> readAllGroups({required String currentUserId}) async {
+  try {
+    var result = await databases.listDocuments(
+        databaseId: db,
+        collectionId: groupCollection,
+        queries: [Query.equal("members", currentUserId), Query.limit(100)]);
+
+    return result;
+  } catch (e) {
+    print("error on reading group $e");
+    return null;
+  }
+}
+
+// GROUP MESSAGES
+// send a message to the group
+Future<bool> sendGroupMessage(
+    {required String groupId,
+    required String message,
+    required String senderId,
+    bool? isImage}) async {
+  try {
+    await databases.createDocument(
+        databaseId: db,
+        collectionId: groupMsgCollection,
+        documentId: ID.unique(),
+        data: {
+          "groupId": groupId,
+          "message": message,
+          "senderId": senderId,
+          "timestamp": DateTime.now().toIso8601String(),
+          "isImage": isImage ?? false,
+          "userData": [senderId]
+        });
+        return true;
+  } catch (e) {
+    print("error on sending group message ");
+  return false;
+  }
+}
+
+// update the group message
+Future<bool> updateGroupMessage({required String messageId,required String newMessage})async{
+  try{
+    await databases.updateDocument(databaseId: db,
+     collectionId: groupMsgCollection, documentId: messageId
+     ,data:  {
+      "message":newMessage
+     });
+     return true;
+  }
+  catch(e){
+    print("error on updating group chat :$e");
+    return false;
+  }
+}
+
+// delete the specific group message
+Future deleteGroupMessage({required String messageId})async{
+  try{
+    await databases.deleteDocument(databaseId: db, 
+    collectionId: groupMsgCollection, documentId: messageId);
+  }
+  catch(e){
+    print("error in deleting group message :$e");
+  }
+}
+
+// reading all the group messages
+Future<Map<String, List<GroupMessageModel>>?> readGroupMessages(
+    {required List<String> groupIds}) async {
+  try {
+    var results = await databases
+        .listDocuments(databaseId: db, collectionId: groupMsgCollection, queries: [
+          Query.equal("groupId",groupIds),
+      Query.orderDesc("timestamp"),
+      Query.limit(2000)
+    ]);
+
+    final DocumentList groupChatDocuments = results;
+
+ 
+    Map<String, List<GroupMessageModel>> chats = {};
+
+    if (groupChatDocuments.documents.isNotEmpty) {
+      for (var i = 0; i < groupChatDocuments.documents.length; i++) {
+        var doc = groupChatDocuments.documents[i];
+      
+        GroupMessageModel message = GroupMessageModel.fromMap(doc.data);
+         String groupId = doc.data["groupId"];
+
+        String key =groupId;
+
+        if (chats[key] == null) {
+          chats[key] = [];
+        }
+        chats[key]!.add(message);
+      }
+    }
+
+    print("loaded chats ${chats.length}");
+
+    return chats;
+  } catch (e) {
+    print("error in reading group chat messages :$e");
+    return null;
+  }
+}
+
+// to add the user to the specific group
+Future<bool> addUserToGroup({required String groupId,required String currentUser})async{
+  try{
+    //  read the group members first
+    final result= await databases.getDocument(databaseId: db,
+     collectionId: groupCollection, documentId: groupId, queries: [Query.select(["members"])]);
+
+     List existingMembers= result.data["members"];
+
+     if(!existingMembers.contains(currentUser)){
+      existingMembers.add(currentUser);
+     }
+
+    //  update the document of the specific group
+    await databases.updateDocument(databaseId: db, 
+    collectionId: groupCollection, documentId: groupId,
+    data: {
+      "members":existingMembers,
+      "userData":existingMembers
+    });
+    return true;
+  }
+  catch(e){
+    print("error on joining group :$e");
+    return false;
+  }
+}
+
+// to exit the specific group
+Future<bool>exitGroup({required String groupId, required String currentUser})async{
+   try{
+    //  read the group members first
+    final result= await databases.getDocument(databaseId: db,
+     collectionId: groupCollection, documentId: groupId, queries: [Query.select(["members"])]);
+
+     List existingMembers= result.data["members"];
+
+     if(existingMembers.contains(currentUser)){
+      existingMembers.remove(currentUser);
+     }
+
+    //  update the document of the specific group
+    await databases.updateDocument(databaseId: db, 
+    collectionId: groupCollection, documentId: groupId,
+    data: {
+      "members":existingMembers,
+      "userData":existingMembers
+    });
+    return true;
+  }
+  catch(e){
+    print("error on leaving group :$e");
+    return false;
+  }
+}
+
+// calculate the no of last unreadMessages
+  Future<int> calculateUnreadMessages(String groupId, List<GroupMessageModel> groupMessages) async {
+  Map<String, String> lastSeenMessages = await LocalSavedData(). getLastSeenMessages();
+  String? lastSeenMessageId = lastSeenMessages[groupId];
+
+  if (lastSeenMessageId == null) {
+    return groupMessages.length; 
+  }
+
+  int unreadCount = groupMessages.indexWhere((message) => message.messageId == lastSeenMessageId);
+  if (unreadCount == -1) {
+    return groupMessages.length; 
+  }
+
+  return groupMessages.length - unreadCount - 1; 
+}
+
+// save last message seen in the group
+ Future<void> updateLastMessageSeen(String groupId, String lastMessageSeenId) async {
+  Map<String, String> lastSeenMessages = await LocalSavedData().getLastSeenMessages();
+  print("last seen messages: $lastSeenMessages");
+  lastSeenMessages[groupId] = lastMessageSeenId; 
+  await LocalSavedData(). saveLastSeenMessages(lastSeenMessages); 
+}
+
+// list all public groups
+Future <List<Document>> getPublicGroups()async{
+  try{
+    final results = await databases.listDocuments(
+        databaseId: db, collectionId: groupCollection, queries: [
+          Query.equal("isPublic", true),
+        ]
+    );
+    print("result got");
+    print(results.documents.length);
+    return results.documents;
+    
+  }catch(e){
+    print("error in getting public groups $e");
+    return [];
+  }
+}
+
+
+// send notifications to multiple users at once
+Future sendMultipleNotificationtoOtherUser({
+  required String notificationTitle,
+  required String notificationBody,
+  required List<String> deviceToken,
+}) async {
+  try {
+    print("sending notification");
+    final Map<String, dynamic> body = {
+      "deviceToken": deviceToken,
+      "message": {"title": notificationTitle, "body": notificationBody},
+    };
+
+    final response = await http.post(
+        Uri.parse("https://6639e5cdc5c67686b510.appwrite.global/many"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(body));
 

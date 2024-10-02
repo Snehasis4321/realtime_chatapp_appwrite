@@ -99,10 +99,12 @@ class _ChatPageState extends State<ChatPage> {
                 senderId: currentUserId,
                 receiverId: receiver.userId,
                 isImage: true,
+                isGroupInvite: false,
               ).then((value) {
                 if (value) {
                   Provider.of<ChatProvider>(context, listen: false).addMessage(
                       MessageModel(
+                        isGroupInvite: false,
                         message: imageId,
                         sender: currentUserId,
                         receiver: receiver.userId,
@@ -135,11 +137,12 @@ class _ChatPageState extends State<ChatPage> {
                 message: messageController.text,
                 senderId: currentUserId,
                 receiverId: receiver.userId,
-                isImage: false)
+                isImage: false,isGroupInvite: false)
             .then((value) {
           if (value) {
             Provider.of<ChatProvider>(context, listen: false).addMessage(
                 MessageModel(
+                  isGroupInvite: false,
                     message: messageController.text,
                     sender: currentUserId,
                     receiver: receiver.userId,
@@ -164,6 +167,7 @@ class _ChatPageState extends State<ChatPage> {
     return Consumer<ChatProvider>(
       builder: (context, value, child) {
         final userAndOtherChats = value.getAllChats[receiver.userId] ?? [];
+        
 
         bool? otherUserOnline = userAndOtherChats.isNotEmpty
             ? userAndOtherChats[0].users[0].userId == receiver.userId

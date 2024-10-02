@@ -48,31 +48,46 @@ class _SearchUsersState extends State<SearchUsers> {
           ),
         ),
         bottom: PreferredSize(
-            preferredSize: Size.fromHeight(50),
-            child: Container(
-              decoration: BoxDecoration(
-                  color: kSecondaryColor,
-                  borderRadius: BorderRadius.circular(6)),
-              margin: EdgeInsets.all(8),
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                      child: TextField(
-                    controller: _searchController,
-                    onSubmitted: (value) => _handleSearch(),
-                    decoration: InputDecoration(
-                        border: InputBorder.none,
-                        hintText: "Enter phone number"),
-                  )),
-                  IconButton(
-                    icon: Icon(Icons.search),
-                    onPressed: () {
-                      _handleSearch();
-                    },
-                  )
-                ],
-              ),
+            preferredSize: Size.fromHeight(110),
+            child: Column(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                      color: kSecondaryColor,
+                      borderRadius: BorderRadius.circular(6)),
+                  margin: EdgeInsets.all(8),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                          child: TextField(
+                        controller: _searchController,
+                        onSubmitted: (value) => _handleSearch(),
+                        decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: "Enter phone number"),
+                      )),
+                      IconButton(
+                        icon: Icon(Icons.search),
+                        onPressed: () {
+                          _handleSearch();
+                        },
+                      )
+                    ],
+                  ),
+                ),
+                ListTile(
+                  onTap: () => Navigator.pushNamed(context,"/modify_group"),
+                  leading: Icon(Icons.group_add_outlined),
+                  title: Text("Create new group"),
+                  trailing: Icon(
+                    Icons
+                        .arrow_forward_ios, // Add an arrow for navigation indication
+                    color: Colors.grey, // Subtle arrow color
+                    size: 18,
+                  ),
+                )
+              ],
             )),
       ),
       body: searchedUsers.total == -1
@@ -103,9 +118,11 @@ class _SearchUsersState extends State<SearchUsers> {
                                 "https://cloud.appwrite.io/v1/storage/buckets/662faabe001a20bb87c6/files/${searchedUsers.documents[index].data["profile_pic"]}/view?project=662e8e5c002f2d77a17c&mode=admin")
                             : Image(image: AssetImage("assets/user.png")).image,
                       ),
-                      title: Text(searchedUsers.documents[index].data["name"]),
-                      subtitle:
-                          Text(searchedUsers.documents[index].data["phone_no"]),
+                      title: Text(searchedUsers.documents[index].data["name"] ??
+                          "No Name"),
+                      subtitle: Text(
+                          searchedUsers.documents[index].data["phone_no"] ??
+                              ""),
                     );
                   },
                 ),

@@ -11,11 +11,18 @@ import 'package:realtime_chatapp_appwrite/firebase_options.dart';
 import 'package:realtime_chatapp_appwrite/providers/chat_provider.dart';
 import 'package:realtime_chatapp_appwrite/providers/user_data_provider.dart';
 import 'package:realtime_chatapp_appwrite/views/chat_page.dart';
+import 'package:realtime_chatapp_appwrite/views/create_or_update_group.dart';
+import 'package:realtime_chatapp_appwrite/views/explore_groups.dart';
+import 'package:realtime_chatapp_appwrite/views/group_chat_page.dart';
+import 'package:realtime_chatapp_appwrite/views/group_details.dart';
 import 'package:realtime_chatapp_appwrite/views/home.dart';
+import 'package:realtime_chatapp_appwrite/views/invite_members.dart';
 import 'package:realtime_chatapp_appwrite/views/phone_login.dart';
 import 'package:realtime_chatapp_appwrite/views/profile.dart';
 import 'package:realtime_chatapp_appwrite/views/search_users.dart';
 import 'package:realtime_chatapp_appwrite/views/update_profile.dart';
+
+import 'providers/group_message_provider.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -125,6 +132,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (context) => UserDataProvider()),
         ChangeNotifierProvider(create: (context) => ChatProvider()),
+        ChangeNotifierProvider(create: (context) => GroupMessageProvider()),
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,
@@ -155,7 +163,12 @@ class MyApp extends StatelessWidget {
           "/chat": (context) => ChatPage(),
           "/profile": (context) => ProfilePage(),
           "/update": (context) => UpdateProfile(),
-          "/search": (context) => SearchUsers()
+          "/search": (context) => SearchUsers(),
+          "/modify_group": (context)=> CreateOrUpdateGroup(),
+          "/read_group_message": (context)=> GroupChatPage(),
+          "/invite_members":(context)=>InviteMembers(),
+          "/group_detail":(context)=> GroupDetails(),
+          "/explore_groups":(context)=> ExploreGroups()
         },
       ),
     );
